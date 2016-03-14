@@ -17,30 +17,34 @@ import component.Config;
 
 public class Main {
 	
-	static int nodesNum=0;
+	static final int expectedNetworkSize = 7;
 	
 	
 	public static void main(String[] args) throws RemoteException, IOException {
-		Registry registry = LocateRegistry.createRegistry(Config.PORT);
+//		Registry registry = LocateRegistry.createRegistry(1099);
 		
-		BufferedReader br = new BufferedReader(new FileReader("nodes.txt"));
-		String line = "";	
-		String[] split_line;
-		while ((line = br.readLine()) != null) {
-			split_line = line.split(" ");
-			Integer set[] = new Integer[split_line.length];
-			for (int i = 0; i < split_line.length; i++) {
-			  set[i] = Integer.valueOf(line.split(" ")[i].trim());			  
-			}
-//			System.out.println(set[0]);
-			registry.rebind("rmi://localhost/Mae"+nodesNum, new ComponentImp(set, nodesNum));
-			nodesNum++;
-		}
+		int registryPort = Integer.parseInt(args[0]);
+		int nodePort = Integer.parseInt(args[1]);
 		
-		br.close();
-		
-		new ProcessManager().setRegistry();
+		ComponentImp node = new ComponentImp(registryPort, nodePort, expectedNetworkSize);
+		node.notifyOthers();
 		System.out.println("started");
+//		BufferedReader br = new BufferedReader(new FileReader("nodes.txt"));
+//		String line = "";	
+//		String[] split_line;
+//		while ((line = br.readLine()) != null) {
+//			split_line = line.split(" ");
+//			Integer set[] = new Integer[split_line.length];
+//			for (int i = 0; i < split_line.length; i++) {
+//			  set[i] = Integer.valueOf(line.split(" ")[i].trim());			  
+//			}
+//			System.out.println(set[0]);
+//			registry.rebind("rmi://localhost/Mae"+nodesNum, new ComponentImp(set, nodesNum));
+//			nodesNum++;
+//		}
+		
+//		br.close();
+		
 				
 	}
 	
