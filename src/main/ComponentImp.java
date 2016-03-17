@@ -15,6 +15,10 @@ import java.rmi.AlreadyBoundException;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.util.Date;
 
 import component.Component;
 import message.*;
@@ -36,6 +40,7 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 	private AtomicBoolean postponed = new AtomicBoolean(false);
 	private AtomicReference<Message> currentGrant = new AtomicReference<>();
 	AtomicInteger nodesJoined = new AtomicInteger(0);
+	private BufferedWriter output;
 	
 	protected ComponentImp(int registryPort, int nodePort, int expectedNetworkSize) throws RemoteException, IOException {
 		super();
@@ -67,6 +72,13 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 		}		
 		br.close();
 		System.out.println("node" + this.id + "has set" + Arrays.toString(set));
+		
+		try {
+			File file = new File("Results" +".txt");
+			this.output = new BufferedWriter(new FileWriter(file, true));
+		} catch ( IOException e ) {
+			e.printStackTrace();
+		}
 	}
 
 	// Notify other nodes that you have joined the network.
@@ -131,7 +143,7 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 		return id;
 	}
 
-	synchronized public void multicast(TYPE type) throws RemoteException{		
+	public void multicast(TYPE type) throws RemoteException{		
 //		for(Component c: request_set){
 //			System.out.println(c.getId());		
 //		}
@@ -152,6 +164,16 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 			
 
 		}
+		
+		if(type == TYPE.RELEASE){
+			try{
+				Thread.sleep(new Random().nextInt(1000)+200);
+				multicast(TYPE.REQUEST);
+			}catch(Exception e){
+				
+			}
+			
+		}	
 	}
 	
 	public void receive(Message msg) throws RemoteException, NotBoundException {
@@ -159,15 +181,36 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 		clk.update(msg.getClock());
 		switch(msg.getType()) {
 		case REQUEST:
-			System.out.println("node" + this.getId() + " at time" + this.clk.getTimeStamp() + "; Recieve request from Process " + msg.getIdSender()+ "\n");
+			System.out.println("node" + this.getId() + " Recieve request from Process " + msg.getIdSender()+ "\n");
+			try{
+				output.write("node" + this.getId() + " Recieve request from Process " + msg.getIdSender()+ "\n");
+				output.flush();
+			}
+			catch(IOException e){
+				
+			}
 			this.receiveRequest(msg);
 			break;
 		case GRANT:			
 			System.out.println("Process " + msg.getIdSender() + " has sent grant out to Process " + this.getId());
+			try{
+				output.write("Process " + msg.getIdSender() + " has sent grant out to Process " + this.getId() + "\n");
+				output.flush();
+			}
+			catch(IOException e){
+				
+			}
 			if(grantsNum.incrementAndGet() == set.length) {
 				postponed.set(false);
 				enterCS();
 				System.out.println("Process " + this.getId() + " is done");
+				try{
+					output.write("Process " + this.getId() + " is done at time " + new Date().getTime() + "\n");
+					output.flush();
+				}
+				catch(IOException e){
+					
+				}
 //				for(Component c: this.request_set){
 //					c.receive(new Message(this.getId(), this.clk.add(), TYPE.RELEASE));
 //				}
@@ -176,6 +219,13 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 			break;
 		case INQUIRE:
 			System.out.println("Process " + msg.getIdSender() + " has sent inquire out to Process " + this.getId());
+			try{
+				output.write("Process " + msg.getIdSender() + " has sent inquire out to Process " + this.getId() + "\n");
+				output.flush();
+			}
+			catch(IOException e){
+				
+			}
 			while(!postponed.get() && grantsNum.get() < set.length) {
 				try {
 					Thread.sleep(2);
@@ -190,6 +240,13 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 			break;
 		case RELINQUISH:
 			System.out.println("Process " + msg.getIdSender() + " has sent relinquish out to Process " + this.getId());
+			try{
+				output.write("Process " + msg.getIdSender() + " has sent relinquish out to Process " + this.getId() + "\n");
+				output.flush();
+			}
+			catch(IOException e){
+				
+			}
 			inquiring.set(false);
 			granted.set(false);
 			reqQueue.add(currentGrant.get());
@@ -199,6 +256,13 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 			break;
 		case RELEASE:
 			System.out.println("Process " + msg.getIdSender() + " has sent release out to Process " + this.getId());
+			try{
+				output.write("Process " + msg.getIdSender() + " has sent release out to Process " + this.getId() + "\n");
+				output.flush();
+			}
+			catch(IOException e){
+				
+			}		
 			granted.set(false);
 			inquiring.set(false);
 			if(!reqQueue.isEmpty()) {
@@ -209,6 +273,13 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 			break;
 		case POSTPONED:
 			System.out.println("Process " + msg.getIdSender() + " has sent postpone out to Process " + this.getId());
+			try{
+				output.write("Process " + msg.getIdSender() + " has sent postpone out to Process " + this.getId() + "\n");
+				output.flush();
+			}
+			catch(IOException e){
+				
+			}
 			postponed.set(true);		
 			break;
 		default:
@@ -245,6 +316,13 @@ public class ComponentImp extends UnicastRemoteObject implements Component{
 	
 	private void enterCS()  throws RemoteException {
 		System.out.println("Process " + this.getId() + " is  in the critical section ");
+		try{
+			output.write("Process " + this.getId() + " is  in the critical section at time " + new Date().getTime() + "\n");
+			output.flush();
+		}
+		catch(IOException e){
+			
+		}
 		try {
 			Thread.sleep(new Random().nextInt(200)+50);
 		} catch (InterruptedException e) {
